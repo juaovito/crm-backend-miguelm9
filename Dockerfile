@@ -1,10 +1,10 @@
-FROM openjdk:21-jdk-slim
-WORKDIR /app
-COPY mvnw ./
-COPY .mvn .mvn
-COPY pom.xml ./
-COPY src src
-RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+# Usa uma imagem oficial e ativa com Java 21 e Maven
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+COPY . .
+RUN mvn clean package -DskipTests
+
+# Executa a aplicação
+FROM eclipse-temurin:21-jre
+COPY --from=build /target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "target/*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
