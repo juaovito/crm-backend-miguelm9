@@ -1,0 +1,5 @@
+com\m9\crm\controller\TestController.class
+com\m9\crm\model\Usuario.class
+com\m9\crm\config\DataSourceConfig.class
+com\m9\crm\CrmApplication.class
+com\m9\crm\repository\UsuarioRepository.class
