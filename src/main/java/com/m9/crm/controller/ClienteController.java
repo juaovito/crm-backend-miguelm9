@@ -2,7 +2,6 @@ package com.m9.crm.controller;
 
 import com.m9.crm.model.Cliente;
 import com.m9.crm.repository.ClienteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,8 +11,11 @@ import java.util.List;
 @RequestMapping("/api/clientes")
 public class ClienteController {
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
+
+    public ClienteController(ClienteRepository clienteRepository) {
+        this.clienteRepository = clienteRepository;
+    }
 
     @GetMapping
     public List<Cliente> listar() {
@@ -57,6 +59,7 @@ public class ClienteController {
             cliente.setDataEntrada(dados.getDataEntrada());
             cliente.setProrrogacao(dados.getProrrogacao());
             cliente.setObservacoes(dados.getObservacoes());
+            // responsavel e criadoPor são preservados do registro original — não sobrescrever
             return ResponseEntity.ok(clienteRepository.save(cliente));
         }).orElse(ResponseEntity.notFound().build());
     }
