@@ -1,4 +1,3 @@
-// src/main/java/com/m9/crm/controller/ClienteController.java
 package com.m9.crm.controller;
 
 import com.m9.crm.model.Cliente;
@@ -16,13 +15,11 @@ public class ClienteController {
     @Autowired
     private ClienteRepository clienteRepository;
 
-    // LISTAR TODOS
     @GetMapping
     public List<Cliente> listar() {
         return clienteRepository.findAll();
     }
 
-    // BUSCAR POR ID
     @GetMapping("/{id}")
     public ResponseEntity<Cliente> buscar(@PathVariable Long id) {
         return clienteRepository.findById(id)
@@ -30,30 +27,40 @@ public class ClienteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // CADASTRAR
     @PostMapping
-    public Cliente cadastrar(@RequestBody Cliente cliente) {
-        return clienteRepository.save(cliente);
+    public ResponseEntity<Cliente> cadastrar(@RequestBody Cliente cliente) {
+        Cliente salvo = clienteRepository.save(cliente);
+        return ResponseEntity.status(201).body(salvo);
     }
 
-    // ATUALIZAR
     @PutMapping("/{id}")
     public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente dados) {
         return clienteRepository.findById(id).map(cliente -> {
+            cliente.setOrigem(dados.getOrigem());
+            cliente.setContrato(dados.getContrato());
             cliente.setEmpresa(dados.getEmpresa());
-            cliente.setContato(dados.getContato());
-            cliente.setStatus(dados.getStatus());
-            cliente.setTelefone(dados.getTelefone());
+            cliente.setCnpj(dados.getCnpj());
+            cliente.setCpf(dados.getCpf());
+            cliente.setNomeContato(dados.getNomeContato());
+            cliente.setCargo(dados.getCargo());
+            cliente.setEndereco(dados.getEndereco());
+            cliente.setBairro(dados.getBairro());
+            cliente.setCep(dados.getCep());
+            cliente.setCidade(dados.getCidade());
+            cliente.setEstado(dados.getEstado());
             cliente.setEmail(dados.getEmail());
+            cliente.setTelefone(dados.getTelefone());
+            cliente.setTelefone2(dados.getTelefone2());
             cliente.setConsultor(dados.getConsultor());
             cliente.setValor(dados.getValor());
+            cliente.setStatus(dados.getStatus());
+            cliente.setDataEntrada(dados.getDataEntrada());
             cliente.setProrrogacao(dados.getProrrogacao());
             cliente.setObservacoes(dados.getObservacoes());
             return ResponseEntity.ok(clienteRepository.save(cliente));
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    // DELETAR
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         if (!clienteRepository.existsById(id)) {
