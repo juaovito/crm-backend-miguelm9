@@ -1,55 +1,30 @@
 package com.m9.crm.controller;
 
-import com.m9.crm.model.Usuario;
-import com.m9.crm.repository.UsuarioRepository;
+import com.m9.crm.dto.LoginRequest;
+import com.m9.crm.dto.LoginResponse;
+import com.m9.crm.dto.RefreshTokenRequest;
+import com.m9.crm.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UsuarioRepository usuarioRepository;
+    private final AuthService authService;
 
-    public AuthController(UsuarioRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String login = body.get("login");
-        String senha = body.get("senha");
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 
-        if (login == null || login.isBlank() || senha == null || senha.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("mensagem", "Login e senha são obrigatórios"));
-        }
-
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByLogin(login);
-
-        /**
-         * TODO: quando Spring Security + BCrypt for integrado, substituir a comparação abaixo por:
-         *   passwordEncoder.matches(senha, usuario.getSenha())
-         *
-         * A comparação direta é insegura e deve ser substituída antes de ir para produção
-         * com usuários reais.
-         */
-        if (usuarioOpt.isEmpty() || !usuarioOpt.get().getSenha().equals(senha)) {
-            return ResponseEntity.status(401)
-                    .body(Map.of("mensagem", "Usuário ou senha incorretos"));
-        }
-
-        Usuario usuario = usuarioOpt.get();
-
-        return ResponseEntity.ok(Map.of(
-                "id", usuario.getId(),
-                "login", usuario.getLogin(),
-                "nome", usuario.getNome() != null ? usuario.getNome() : usuario.getLogin(),
-                "cargo", usuario.getCargo() != null ? usuario.getCargo() : "consultor",
-                "foto", usuario.getFoto() != null ? usuario.getFoto() : ""
-        ));
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }
