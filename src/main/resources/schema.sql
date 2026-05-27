@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE crm;
 
-CREATE TABLE IF NOT EXISTS usuarios (
+//CREATE TABLE IF NOT EXISTS usuarios (
     id             BIGINT       NOT NULL AUTO_INCREMENT,
     login          VARCHAR(100) NOT NULL,
     nome           VARCHAR(100) NOT NULL,
