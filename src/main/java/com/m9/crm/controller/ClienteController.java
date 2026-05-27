@@ -1,75 +1,60 @@
 package com.m9.crm.controller;
 
+import com.m9.crm.dto.ClienteRequest;
 import com.m9.crm.model.Cliente;
-import com.m9.crm.repository.ClienteRepository;
+import com.m9.crm.service.ClienteService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.List;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/clientes")
 public class ClienteController {
 
-    private final ClienteRepository clienteRepository;
+    private final ClienteService clienteService;
 
-    public ClienteController(ClienteRepository clienteRepository) {
-        this.clienteRepository = clienteRepository;
+    public ClienteController(ClienteService clienteService) {
+        this.clienteService = clienteService;
     }
 
     @GetMapping
-    public List<Cliente> listar() {
-        return clienteRepository.findAll();
+    public ResponseEntity<Page<Cliente>> listar(
+            @RequestParam(required = false) String termo,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String consultor,
+            @PageableDefault(size = 20, sort = "empresa", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(clienteService.buscar(termo, status, consultor, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Cliente> buscar(@PathVariable Long id) {
-        return clienteRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(clienteService.buscarPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<Cliente> cadastrar(@RequestBody Cliente cliente) {
-        Cliente salvo = clienteRepository.save(cliente);
-        return ResponseEntity.status(201).body(salvo);
+    public ResponseEntity<Cliente> cadastrar(@Valid @RequestBody ClienteRequest request) {
+        Cliente salvo = clienteService.criar(request, null);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(salvo.getId()).toUri();
+        return ResponseEntity.created(location).body(salvo);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente dados) {
-        return clienteRepository.findById(id).map(cliente -> {
-            cliente.setOrigem(dados.getOrigem());
-            cliente.setContrato(dados.getContrato());
-            cliente.setEmpresa(dados.getEmpresa());
-            cliente.setCnpj(dados.getCnpj());
-            cliente.setCpf(dados.getCpf());
-            cliente.setNomeContato(dados.getNomeContato());
-            cliente.setCargo(dados.getCargo());
-            cliente.setEndereco(dados.getEndereco());
-            cliente.setBairro(dados.getBairro());
-            cliente.setCep(dados.getCep());
-            cliente.setCidade(dados.getCidade());
-            cliente.setEstado(dados.getEstado());
-            cliente.setEmail(dados.getEmail());
-            cliente.setTelefone(dados.getTelefone());
-            cliente.setTelefone2(dados.getTelefone2());
-            cliente.setConsultor(dados.getConsultor());
-            cliente.setValor(dados.getValor());
-            cliente.setStatus(dados.getStatus());
-            cliente.setDataEntrada(dados.getDataEntrada());
-            cliente.setProrrogacao(dados.getProrrogacao());
-            cliente.setObservacoes(dados.getObservacoes());
-            // responsavel e criadoPor são preservados do registro original — não sobrescrever
-            return ResponseEntity.ok(clienteRepository.save(cliente));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Cliente> atualizar(@PathVariable Long id,
+                                              @Valid @RequestBody ClienteRequest request) {
+        return ResponseEntity.ok(clienteService.atualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        if (!clienteRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        clienteRepository.deleteById(id);
+        clienteService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 }
