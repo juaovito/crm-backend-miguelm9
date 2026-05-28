@@ -34,7 +34,7 @@ public class JwtService {
                 .claims(extraClaims)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key)
+                .signWith(key, Jwts.SIG.HS512)
                 .compact();
     }
 
@@ -43,7 +43,7 @@ public class JwtService {
                 .subject(subject)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
-                .signWith(key)
+                .signWith(key, Jwts.SIG.HS512)
                 .compact();
     }
 
@@ -56,12 +56,16 @@ public class JwtService {
             parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            System.out.println("JWT inválido: " + e.getMessage());
             return false;
         }
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser().verifyWith(key).build()
-                .parseSignedClaims(token).getPayload();
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
