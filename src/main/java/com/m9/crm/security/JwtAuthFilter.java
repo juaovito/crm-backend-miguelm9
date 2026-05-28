@@ -34,19 +34,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+
         final String token = authHeader.substring(7);
-        if (!jwtService.isValid(token)) {
-            filterChain.doFilter(request, response);
-            return;
+
+        try {
+            if (!jwtService.isValid(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            final String login = jwtService.extractSubject(token);
+            if (login != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                var userDetails = userDetailsService.loadUserByUsername(login);
+                var auth = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+        } catch (Exception e) {
+            logger.error("Erro ao processar token JWT: " + e.getMessage());
         }
-        final String login = jwtService.extractSubject(token);
-        if (login != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var userDetails = userDetailsService.loadUserByUsername(login);
-            var auth = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        }
+
         filterChain.doFilter(request, response);
     }
 }
