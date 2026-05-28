@@ -47,5 +47,6 @@ CREATE TABLE IF NOT EXISTS clientes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Usuário admin inicial — senha: admin123  (TROQUE no primeiro login!)
-INSERT IGNORE INTO usuarios (login, nome, senha, cargo, ativo, criado_em, atualizado_em)
-VALUES ('admin','Administrador','$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','admin',1,NOW(),NOW());
+INSERT INTO usuarios (login, nome, senha, cargo, ativo, criado_em, atualizado_em)
+VALUES ('admin','Administrador','$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','admin',1,NOW(),NOW())
+ON DUPLICATE KEY UPDATE senha = VALUES(senha);
