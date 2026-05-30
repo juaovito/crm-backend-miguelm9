@@ -1,6 +1,7 @@
 package com.m9.crm.controller;
 
 import com.m9.crm.dto.ClienteRequest;
+import com.m9.crm.dto.MarcarPerdidoRequest;
 import com.m9.crm.model.Cliente;
 import com.m9.crm.service.ClienteService;
 import jakarta.validation.Valid;
@@ -50,6 +51,12 @@ public class ClienteController {
     public ResponseEntity<Cliente> atualizar(@PathVariable Long id,
                                               @Valid @RequestBody ClienteRequest request) {
         return ResponseEntity.ok(clienteService.atualizar(id, request));
+    }
+
+    @PatchMapping("/{id}/perdido")
+    public ResponseEntity<Cliente> marcarPerdido(@PathVariable Long id,
+                                                  @Valid @RequestBody MarcarPerdidoRequest request) {
+        return ResponseEntity.ok(clienteService.marcarPerdido(id, request));
     }
 
     @DeleteMapping("/{id}")
