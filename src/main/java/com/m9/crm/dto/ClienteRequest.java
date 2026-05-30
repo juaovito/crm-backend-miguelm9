@@ -13,6 +13,7 @@ public record ClienteRequest(
         @NotBlank(message = "Empresa é obrigatória") @Size(max = 150) String empresa,
         @Size(max = 18)  String cnpj,
         @Size(max = 14)  String cpf,
+        @Size(max = 30)  String inscricaoEstadual,
         @Size(max = 100) String nomeContato,
         @Size(max = 80)  String cargo,
         @Size(max = 200) String endereco,
