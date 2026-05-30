@@ -1,6 +1,7 @@
 package com.m9.crm.service;
 
 import com.m9.crm.dto.ClienteRequest;
+import com.m9.crm.dto.MarcarPerdidoRequest;
 import com.m9.crm.exception.RecursoNaoEncontradoException;
 import com.m9.crm.model.Cliente;
 import com.m9.crm.repository.ClienteRepository;
@@ -8,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,8 +39,18 @@ public class ClienteService {
     @Transactional
     public Cliente atualizar(Long id, ClienteRequest request) {
         Cliente cliente = buscarPorId(id);
-        Long criadoPor = cliente.getCriadoPor(); // preserva
+        Long criadoPor = cliente.getCriadoPor();
         toEntity(cliente, request, criadoPor);
+        return clienteRepository.save(cliente);
+    }
+
+    @Transactional
+    public Cliente marcarPerdido(Long id, MarcarPerdidoRequest request) {
+        Cliente cliente = buscarPorId(id);
+        cliente.setStatus("Perdido");
+        cliente.setMotivoPerda(request.motivo());
+        cliente.setResponsavelPerda(request.responsavel());
+        cliente.setPerdaRegistradaEm(LocalDateTime.now());
         return clienteRepository.save(cliente);
     }
 
