@@ -43,5 +43,48 @@ CREATE TABLE IF NOT EXISTS clientes (
     INDEX idx_clientes_status     (status),
     INDEX idx_clientes_consultor  (consultor),
     INDEX idx_clientes_criado_por (criado_por),
-    INDEX idx_clientes_empresa    (empresa)
+    INDEX idx_clientes_empresa    (empresa),
+    CONSTRAINT fk_clientes_criado_por FOREIGN KEY (criado_por)
+        REFERENCES usuarios (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -------------------------------------------------------------
+-- OCORRÊNCIAS — histórico de atendimento por cliente
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ocorrencias (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    cliente_id     BIGINT       NOT NULL,
+    usuario        VARCHAR(100) NOT NULL COMMENT 'Nome do usuário responsável',
+    status         VARCHAR(80)  NOT NULL DEFAULT 'Aberto',
+    estagio        VARCHAR(50)  NULL     COMMENT 'Quente | Morno | Frio',
+    agendamento    DATETIME     NULL     COMMENT 'Data/hora do próximo contato agendado',
+    informacoes    TEXT         NOT NULL,
+    criado_em      DATETIME(6)  NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_ocorrencias_cliente_id (cliente_id),
+    INDEX idx_ocorrencias_agendamento (agendamento),
+    CONSTRAINT fk_ocorrencias_cliente FOREIGN KEY (cliente_id)
+        REFERENCES clientes (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -------------------------------------------------------------
+-- AGENDA — tarefas do dashboard por usuário
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS agenda (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    usuario_id     BIGINT       NOT NULL,
+    cliente_nome   VARCHAR(150) NOT NULL,
+    hora           TIME         NOT NULL,
+    tipo           VARCHAR(100) NOT NULL COMMENT 'Ex: Ligação, Proposta, Reunião',
+    data           DATE         NOT NULL COMMENT 'Data da tarefa',
+    concluida      TINYINT(1)   NOT NULL DEFAULT 0,
+    criado_em      DATETIME(6)  NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_agenda_usuario_id (usuario_id),
+    INDEX idx_agenda_data       (data),
+    CONSTRAINT fk_agenda_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuarios (id)
+        ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
