@@ -22,4 +22,9 @@ public class DashboardController {
     public ResponseEntity<Map<String, Object>> resumo() {
         return ResponseEntity.ok(dashboardService.resumoGeral());
     }
+
+    @GetMapping("/pipeline")
+    public ResponseEntity<Map<String, Object>> pipeline() {
+        return ResponseEntity.ok(dashboardService.pipeline());
+    }
 }
