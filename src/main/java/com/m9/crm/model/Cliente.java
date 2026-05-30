@@ -30,6 +30,7 @@ public class Cliente {
     @Column(length = 150) private String empresa;
     @Column(length = 18)  private String cnpj;
     @Column(length = 14)  private String cpf;
+    @Column(length = 30)  private String inscricaoEstadual;
     @Column(length = 100) private String nomeContato;
     @Column(length = 80)  private String cargo;
     @Column(length = 200) private String endereco;
