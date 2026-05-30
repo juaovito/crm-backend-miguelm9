@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
@@ -48,4 +49,19 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
             FROM Cliente c GROUP BY c.consultor ORDER BY COUNT(c) DESC
             """)
     List<Object[]> resumoPorConsultor();
+
+    // ── Pipeline: últimos N leads por status, ordenados por data de entrada desc ──
+
+    @Query("""
+            SELECT c FROM Cliente c
+            WHERE c.status = :status
+            ORDER BY c.criadoEm DESC
+            """)
+    List<Cliente> findTopByStatusOrderByCriadoEmDesc(@Param("status") String status,
+                                                      Pageable pageable);
+
+    // ── Retornos hoje: clientes com prorrogação = hoje ──
+
+    @Query("SELECT COUNT(c) FROM Cliente c WHERE c.prorrogacao = :hoje")
+    long countRetornosHoje(@Param("hoje") LocalDate hoje);
 }
