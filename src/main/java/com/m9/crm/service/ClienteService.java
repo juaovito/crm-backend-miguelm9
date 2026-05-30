@@ -50,7 +50,8 @@ public class ClienteService {
 
     private Cliente toEntity(Cliente c, ClienteRequest r, Long criadoPor) {
         c.setOrigem(r.origem()); c.setContrato(r.contrato()); c.setEmpresa(r.empresa());
-        c.setCnpj(r.cnpj()); c.setCpf(r.cpf()); c.setNomeContato(r.nomeContato());
+        c.setCnpj(r.cnpj()); c.setCpf(r.cpf()); c.setInscricaoEstadual(r.inscricaoEstadual());
+        c.setNomeContato(r.nomeContato());
         c.setCargo(r.cargo()); c.setEndereco(r.endereco()); c.setBairro(r.bairro());
         c.setCep(r.cep()); c.setCidade(r.cidade()); c.setEstado(r.estado());
         c.setEmail(r.email()); c.setTelefone(r.telefone()); c.setTelefone2(r.telefone2());
