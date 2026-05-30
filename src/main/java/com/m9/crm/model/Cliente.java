@@ -55,6 +55,14 @@ public class Cliente {
     @Column(columnDefinition = "TEXT")
     private String observacoes;
 
+    @Column(columnDefinition = "TEXT")
+    private String motivoPerda;
+
+    @Column(length = 100)
+    private String responsavelPerda;
+
+    private LocalDateTime perdaRegistradaEm;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
