@@ -15,6 +15,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     Page<Cliente> findByConsultor(String consultor, Pageable pageable);
     Page<Cliente> findByCriadoPor(Long criadoPor, Pageable pageable);
+    long countByCriadoPor(Long criadoPor);
     Page<Cliente> findByStatus(String status, Pageable pageable);
 
     @Query("""
@@ -33,6 +34,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
                          @Param("consultor") String consultor,
                          Pageable pageable);
 
+    // ── Contagens globais (admin/gerente) ────────────────────────────────────
+
     long countByStatus(String status);
 
     @Query("SELECT COALESCE(SUM(c.valor), 0) FROM Cliente c WHERE c.status = :status")
@@ -50,7 +53,24 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
             """)
     List<Object[]> resumoPorConsultor();
 
-    // ── Pipeline: últimos N leads por status, ordenados por data de entrada desc ──
+    // ── Contagens filtradas por dono (consultor) ─────────────────────────────
+
+    @Query("SELECT COUNT(c) FROM Cliente c WHERE c.status = :status AND c.criadoPor = :criadoPor")
+    long countByStatusAndCriadoPor(@Param("status") String status,
+                                   @Param("criadoPor") Long criadoPor);
+
+    @Query("SELECT COALESCE(SUM(c.valor), 0) FROM Cliente c WHERE c.criadoPor = :criadoPor")
+    BigDecimal somarValorTotalPorDono(@Param("criadoPor") Long criadoPor);
+
+    @Query("""
+            SELECT c.status, COUNT(c), COALESCE(SUM(c.valor), 0)
+            FROM Cliente c
+            WHERE c.criadoPor = :criadoPor
+            GROUP BY c.status
+            """)
+    List<Object[]> resumoPorStatusEDono(@Param("criadoPor") Long criadoPor);
+
+    // ── Pipeline global: últimos N leads por status ──────────────────────────
 
     @Query("""
             SELECT c FROM Cliente c
@@ -60,8 +80,24 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     List<Cliente> findTopByStatusOrderByCriadoEmDesc(@Param("status") String status,
                                                       Pageable pageable);
 
-    // ── Retornos hoje: clientes com prorrogação = hoje ──
+    // ── Pipeline filtrado: últimos N leads por status e dono ─────────────────
+
+    @Query("""
+            SELECT c FROM Cliente c
+            WHERE c.status = :status
+              AND c.criadoPor = :criadoPor
+            ORDER BY c.criadoEm DESC
+            """)
+    List<Cliente> findTopByStatusAndCriadoPorOrderByCriadoEmDesc(@Param("status") String status,
+                                                                   @Param("criadoPor") Long criadoPor,
+                                                                   Pageable pageable);
+
+    // ── Retornos hoje ────────────────────────────────────────────────────────
 
     @Query("SELECT COUNT(c) FROM Cliente c WHERE c.prorrogacao = :hoje")
     long countRetornosHoje(@Param("hoje") LocalDate hoje);
+
+    @Query("SELECT COUNT(c) FROM Cliente c WHERE c.prorrogacao = :hoje AND c.criadoPor = :criadoPor")
+    long countRetornosHojeEDono(@Param("hoje") LocalDate hoje,
+                                @Param("criadoPor") Long criadoPor);
 }
