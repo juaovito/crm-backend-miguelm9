@@ -1,5 +1,6 @@
 package com.m9.crm.service;
 
+import com.m9.crm.dto.ConsultorDTO;
 import com.m9.crm.dto.UsuarioRequest;
 import com.m9.crm.dto.UsuarioResponse;
 import com.m9.crm.exception.RecursoNaoEncontradoException;
@@ -26,6 +27,13 @@ public class UsuarioService {
 
     public List<UsuarioResponse> listarAtivos() {
         return usuarioRepository.findByAtivoTrue().stream().map(UsuarioResponse::from).toList();
+    }
+
+    /** Retorna apenas id + nome dos usuários ativos — sem dados sensíveis. */
+    public List<ConsultorDTO> listarConsultores() {
+        return usuarioRepository.findByAtivoTrue().stream()
+                .map(u -> new ConsultorDTO(u.getId(), u.getNome() != null ? u.getNome() : u.getLogin()))
+                .toList();
     }
 
     public UsuarioResponse buscarPorId(Long id) {
