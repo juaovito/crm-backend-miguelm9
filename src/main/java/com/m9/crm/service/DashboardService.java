@@ -1,6 +1,7 @@
 package com.m9.crm.service;
 
 import com.m9.crm.model.Cliente;
+import com.m9.crm.model.Usuario;
 import com.m9.crm.repository.ClienteRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    // Quantos cards mostrar por coluna no pipeline
     private static final int PIPELINE_LIMITE_POR_STATUS = 10;
 
     private final ClienteRepository clienteRepository;
@@ -26,28 +26,43 @@ public class DashboardService {
         this.clienteRepository = clienteRepository;
     }
 
-    // ── Resumo geral (cards de topo + gráficos) ──────────────────────────────
+    // ── Resumo geral (cards de topo) ─────────────────────────────────────────
 
-    public Map<String, Object> resumoGeral() {
-        long totalClientes = clienteRepository.count();
-        BigDecimal valorTotal = clienteRepository.somarValorTotal();
+    /**
+     * Quando o usuário é admin/gerente retorna dados globais.
+     * Quando é consultor comum, filtra apenas pelos clientes que ele criou.
+     */
+    public Map<String, Object> resumoGeral(Usuario usuarioLogado) {
+        boolean isAdmin = isAdminOuGerente(usuarioLogado);
 
-        List<Map<String, Object>> porStatus = new ArrayList<>();
-        for (Object[] row : clienteRepository.resumoPorStatus()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("status", row[0]);
-            item.put("total",  row[1]);
-            item.put("valor",  row[2]);
-            porStatus.add(item);
-        }
+        long totalClientes;
+        BigDecimal valorTotal;
+        List<Map<String, Object>> porStatus     = new ArrayList<>();
+        List<Map<String, Object>> porConsultor  = new ArrayList<>();
 
-        List<Map<String, Object>> porConsultor = new ArrayList<>();
-        for (Object[] row : clienteRepository.resumoPorConsultor()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("consultor", row[0]);
-            item.put("total",     row[1]);
-            item.put("valor",     row[2]);
-            porConsultor.add(item);
+        if (isAdmin) {
+            totalClientes = clienteRepository.count();
+            valorTotal    = clienteRepository.somarValorTotal();
+
+            for (Object[] row : clienteRepository.resumoPorStatus()) {
+                porStatus.add(montarItemStatus(row));
+            }
+            for (Object[] row : clienteRepository.resumoPorConsultor()) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("consultor", row[0]);
+                item.put("total",     row[1]);
+                item.put("valor",     row[2]);
+                porConsultor.add(item);
+            }
+        } else {
+            Long dono = usuarioLogado.getId();
+            totalClientes = clienteRepository.countByCriadoPor(dono);
+            valorTotal    = clienteRepository.somarValorTotalPorDono(dono);
+
+            for (Object[] row : clienteRepository.resumoPorStatusEDono(dono)) {
+                porStatus.add(montarItemStatus(row));
+            }
+            // consultor individual não vê ranking de outros consultores
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -60,17 +75,28 @@ public class DashboardService {
 
     // ── Pipeline: contagens + últimos N cards por coluna ─────────────────────
 
-    public Map<String, Object> pipeline() {
+    public Map<String, Object> pipeline(Usuario usuarioLogado) {
         List<String> statusPipeline = List.of("Novo", "Contato", "Proposta", "Negociação", "Fechado");
-        PageRequest pagina = PageRequest.of(0, PIPELINE_LIMITE_POR_STATUS);
+        PageRequest pagina          = PageRequest.of(0, PIPELINE_LIMITE_POR_STATUS);
+        boolean isAdmin             = isAdminOuGerente(usuarioLogado);
+        Long dono                   = usuarioLogado.getId();
 
-        // Contagem de retornos hoje (prorrogação = data de hoje)
-        long retornosHoje = clienteRepository.countRetornosHoje(LocalDate.now());
+        long retornosHoje = isAdmin
+                ? clienteRepository.countRetornosHoje(LocalDate.now())
+                : clienteRepository.countRetornosHojeEDono(LocalDate.now(), dono);
 
         List<Map<String, Object>> colunas = new ArrayList<>();
         for (String status : statusPipeline) {
-            long total = clienteRepository.countByStatus(status);
-            List<Cliente> recentes = clienteRepository.findTopByStatusOrderByCriadoEmDesc(status, pagina);
+            long total;
+            List<Cliente> recentes;
+
+            if (isAdmin) {
+                total    = clienteRepository.countByStatus(status);
+                recentes = clienteRepository.findTopByStatusOrderByCriadoEmDesc(status, pagina);
+            } else {
+                total    = clienteRepository.countByStatusAndCriadoPor(status, dono);
+                recentes = clienteRepository.findTopByStatusAndCriadoPorOrderByCriadoEmDesc(status, dono, pagina);
+            }
 
             List<Map<String, Object>> cards = recentes.stream()
                     .map(c -> {
@@ -93,5 +119,21 @@ public class DashboardService {
         result.put("retornosHoje", retornosHoje);
         result.put("colunas",      colunas);
         return result;
+    }
+
+    // ── Helpers privados ─────────────────────────────────────────────────────
+
+    private boolean isAdminOuGerente(Usuario u) {
+        if (u == null || u.getCargo() == null) return false;
+        String cargo = u.getCargo().toLowerCase().trim();
+        return cargo.equals("admin") || cargo.equals("gerente");
+    }
+
+    private Map<String, Object> montarItemStatus(Object[] row) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("status", row[0]);
+        item.put("total",  row[1]);
+        item.put("valor",  row[2]);
+        return item;
     }
 }
