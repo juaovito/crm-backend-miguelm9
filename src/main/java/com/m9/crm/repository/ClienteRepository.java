@@ -18,6 +18,20 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     long countByCriadoPor(Long criadoPor);
     Page<Cliente> findByStatus(String status, Pageable pageable);
 
+    // ── Verificações de duplicidade ──────────────────────────────────────────
+
+    boolean existsByCnpjAndIdNot(String cnpj, Long id);
+    boolean existsByEmailAndIdNot(String email, Long id);
+
+    // Versão para criação (sem id para excluir — passa 0L que nunca existe)
+    default boolean existsByCnpj(String cnpj) {
+        return existsByCnpjAndIdNot(cnpj, 0L);
+    }
+
+    default boolean existsByEmail(String email) {
+        return existsByEmailAndIdNot(email, 0L);
+    }
+
     @Query("""
             SELECT c FROM Cliente c
             WHERE (:termo IS NULL OR :termo = ''
