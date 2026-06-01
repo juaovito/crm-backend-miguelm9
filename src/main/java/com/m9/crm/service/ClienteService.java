@@ -3,6 +3,7 @@ package com.m9.crm.service;
 import com.m9.crm.dto.ClienteRequest;
 import com.m9.crm.dto.MarcarPerdidoRequest;
 import com.m9.crm.exception.RecursoNaoEncontradoException;
+import com.m9.crm.exception.RegraDeNegocioException;
 import com.m9.crm.model.Cliente;
 import com.m9.crm.repository.ClienteRepository;
 import org.springframework.data.domain.Page;
@@ -33,14 +34,15 @@ public class ClienteService {
 
     @Transactional
     public Cliente criar(ClienteRequest request, Long usuarioId) {
+        validarDuplicidade(request.cnpj(), request.email(), null);
         return clienteRepository.save(toEntity(new Cliente(), request, usuarioId));
     }
 
     @Transactional
     public Cliente atualizar(Long id, ClienteRequest request) {
         Cliente cliente = buscarPorId(id);
-        Long criadoPor = cliente.getCriadoPor();
-        toEntity(cliente, request, criadoPor);
+        validarDuplicidade(request.cnpj(), request.email(), id);
+        toEntity(cliente, request, cliente.getCriadoPor());
         return clienteRepository.save(cliente);
     }
 
@@ -59,6 +61,28 @@ public class ClienteService {
         if (!clienteRepository.existsById(id))
             throw new RecursoNaoEncontradoException("Cliente não encontrado: " + id);
         clienteRepository.deleteById(id);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Verifica duplicidade de CNPJ e e-mail.
+     * @param idAtual null na criação; id do registro em edição na atualização (para ignorar o próprio).
+     */
+    private void validarDuplicidade(String cnpj, String email, Long idAtual) {
+        Long excluirId = idAtual != null ? idAtual : 0L;
+
+        if (cnpj != null && !cnpj.isBlank()
+                && clienteRepository.existsByCnpjAndIdNot(cnpj, excluirId)) {
+            throw new RegraDeNegocioException(
+                    "Já existe um cliente cadastrado com o CNPJ " + cnpj + ".");
+        }
+
+        if (email != null && !email.isBlank()
+                && clienteRepository.existsByEmailAndIdNot(email, excluirId)) {
+            throw new RegraDeNegocioException(
+                    "Já existe um cliente cadastrado com o e-mail " + email + ".");
+        }
     }
 
     private Cliente toEntity(Cliente c, ClienteRequest r, Long criadoPor) {
