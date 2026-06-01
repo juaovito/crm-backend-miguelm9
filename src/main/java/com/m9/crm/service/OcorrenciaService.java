@@ -70,4 +70,18 @@ public class OcorrenciaService {
         oc.setStatus(request.status());
         return ocorrenciaRepository.save(oc);
     }
+
+    @Transactional
+    public void deletar(Long clienteId, Long ocorrenciaId) {
+        if (!clienteRepository.existsById(clienteId))
+            throw new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId);
+
+        Ocorrencia oc = ocorrenciaRepository.findById(ocorrenciaId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Ocorrência não encontrada: " + ocorrenciaId));
+
+        if (!oc.getCliente().getId().equals(clienteId))
+            throw new RegraDeNegocioException("Ocorrência não pertence ao cliente informado.");
+
+        ocorrenciaRepository.delete(oc);
+    }
 }
