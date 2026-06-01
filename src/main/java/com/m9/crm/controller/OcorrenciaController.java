@@ -45,4 +45,12 @@ public class OcorrenciaController {
                                                        @Valid @RequestBody OcorrenciaStatusRequest request) {
         return ResponseEntity.ok(ocorrenciaService.atualizarStatus(clienteId, ocorrenciaId, request));
     }
+
+    /** DELETE /api/clientes/{clienteId}/ocorrencias/{ocorrenciaId} */
+    @DeleteMapping("/{ocorrenciaId}")
+    public ResponseEntity<Void> deletar(@PathVariable Long clienteId,
+                                         @PathVariable Long ocorrenciaId) {
+        ocorrenciaService.deletar(clienteId, ocorrenciaId);
+        return ResponseEntity.noContent().build();
+    }
 }
