@@ -5,6 +5,7 @@ import com.m9.crm.model.Fechamento;
 import com.m9.crm.service.FechamentoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -21,8 +22,9 @@ public class FechamentoController {
         this.fechamentoService = fechamentoService;
     }
 
-    // POST /api/fechamentos
+    // POST /api/fechamentos — admin e gerente apenas
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<Fechamento> criar(@Valid @RequestBody FechamentoRequest request) {
         Fechamento salvo = fechamentoService.criar(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -30,20 +32,21 @@ public class FechamentoController {
         return ResponseEntity.created(location).body(salvo);
     }
 
-    // GET /api/fechamentos?clienteId=123
+    // GET /api/fechamentos?clienteId=123 — qualquer autenticado pode consultar
     @GetMapping
     public ResponseEntity<List<Fechamento>> listar(@RequestParam Long clienteId) {
         return ResponseEntity.ok(fechamentoService.listarPorCliente(clienteId));
     }
 
-    // GET /api/fechamentos/{id}
+    // GET /api/fechamentos/{id} — qualquer autenticado pode consultar
     @GetMapping("/{id}")
     public ResponseEntity<Fechamento> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(fechamentoService.buscarPorId(id));
     }
 
-    // DELETE /api/fechamentos/{id}
+    // DELETE /api/fechamentos/{id} — admin e gerente apenas
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         fechamentoService.deletar(id);
         return ResponseEntity.noContent().build();
