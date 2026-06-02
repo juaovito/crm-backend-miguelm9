@@ -2,6 +2,7 @@ package com.m9.crm.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -26,7 +27,11 @@ public record ClienteRequest(
         @Size(max = 20)  String telefone2,
         @Size(max = 100) String consultor,
         BigDecimal valor,
-        @Size(max = 50)  String status,
+        @Pattern(
+            regexp = "^(Novo|Contato|Proposta|Negociação|Fechado|Perdido)$",
+            message = "Status inválido. Use: Novo, Contato, Proposta, Negociação, Fechado ou Perdido"
+        )
+        String status,
         LocalDate dataEntrada,
         LocalDate prorrogacao,
         @Size(max = 100) String responsavel,
