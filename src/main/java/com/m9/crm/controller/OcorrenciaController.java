@@ -6,6 +6,8 @@ import com.m9.crm.model.Ocorrencia;
 import com.m9.crm.service.OcorrenciaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -31,8 +33,9 @@ public class OcorrenciaController {
     /** POST /api/clientes/{clienteId}/ocorrencias */
     @PostMapping
     public ResponseEntity<Ocorrencia> criar(@PathVariable Long clienteId,
-                                             @Valid @RequestBody OcorrenciaRequest request) {
-        Ocorrencia criada = ocorrenciaService.criar(clienteId, request);
+                                             @Valid @RequestBody OcorrenciaRequest request,
+                                             @AuthenticationPrincipal UserDetails principal) {
+        Ocorrencia criada = ocorrenciaService.criar(clienteId, request, principal);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(criada.getId()).toUri();
         return ResponseEntity.created(location).body(criada);
@@ -42,15 +45,17 @@ public class OcorrenciaController {
     @PatchMapping("/{ocorrenciaId}/status")
     public ResponseEntity<Ocorrencia> atualizarStatus(@PathVariable Long clienteId,
                                                        @PathVariable Long ocorrenciaId,
-                                                       @Valid @RequestBody OcorrenciaStatusRequest request) {
-        return ResponseEntity.ok(ocorrenciaService.atualizarStatus(clienteId, ocorrenciaId, request));
+                                                       @Valid @RequestBody OcorrenciaStatusRequest request,
+                                                       @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(ocorrenciaService.atualizarStatus(clienteId, ocorrenciaId, request, principal));
     }
 
     /** DELETE /api/clientes/{clienteId}/ocorrencias/{ocorrenciaId} */
     @DeleteMapping("/{ocorrenciaId}")
     public ResponseEntity<Void> deletar(@PathVariable Long clienteId,
-                                         @PathVariable Long ocorrenciaId) {
-        ocorrenciaService.deletar(clienteId, ocorrenciaId);
+                                         @PathVariable Long ocorrenciaId,
+                                         @AuthenticationPrincipal UserDetails principal) {
+        ocorrenciaService.deletar(clienteId, ocorrenciaId, principal);
         return ResponseEntity.noContent().build();
     }
 }
