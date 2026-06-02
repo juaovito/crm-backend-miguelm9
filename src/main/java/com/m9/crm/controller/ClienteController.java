@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -73,6 +74,7 @@ public class ClienteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         clienteService.deletar(id);
         return ResponseEntity.noContent().build();
@@ -80,10 +82,6 @@ public class ClienteController {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /**
-     * Busca o id real do usuário logado no banco via login extraído do JWT.
-     * Retorna null apenas se o principal for nulo (não deveria ocorrer em endpoints autenticados).
-     */
     private Long resolverUsuarioId(UserDetails principal) {
         if (principal == null) return null;
         return usuarioRepository.findByLogin(principal.getUsername())
@@ -91,11 +89,6 @@ public class ClienteController {
                 .orElse(null);
     }
 
-    /**
-     * Regra de isolamento por cargo:
-     * - CONSULTOR  → ignora o param e força o próprio nome (campo consultor no Cliente).
-     * - ADMIN / GERENTE → respeita o param (null = sem filtro, vê todos).
-     */
     private String resolverFiltroConsultor(String consultorParam, UserDetails principal) {
         if (principal == null) return consultorParam;
 
