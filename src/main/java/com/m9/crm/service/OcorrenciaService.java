@@ -6,8 +6,11 @@ import com.m9.crm.exception.RecursoNaoEncontradoException;
 import com.m9.crm.exception.RegraDeNegocioException;
 import com.m9.crm.model.Cliente;
 import com.m9.crm.model.Ocorrencia;
+import com.m9.crm.model.Usuario;
 import com.m9.crm.repository.ClienteRepository;
 import com.m9.crm.repository.OcorrenciaRepository;
+import com.m9.crm.repository.UsuarioRepository;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +25,14 @@ public class OcorrenciaService {
 
     private final OcorrenciaRepository ocorrenciaRepository;
     private final ClienteRepository    clienteRepository;
+    private final UsuarioRepository    usuarioRepository;
 
     public OcorrenciaService(OcorrenciaRepository ocorrenciaRepository,
-                             ClienteRepository clienteRepository) {
+                             ClienteRepository clienteRepository,
+                             UsuarioRepository usuarioRepository) {
         this.ocorrenciaRepository = ocorrenciaRepository;
         this.clienteRepository    = clienteRepository;
+        this.usuarioRepository    = usuarioRepository;
     }
 
     public List<Ocorrencia> listarPorCliente(Long clienteId) {
@@ -36,9 +42,11 @@ public class OcorrenciaService {
     }
 
     @Transactional
-    public Ocorrencia criar(Long clienteId, OcorrenciaRequest request) {
+    public Ocorrencia criar(Long clienteId, OcorrenciaRequest request, UserDetails principal) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId));
+
+        verificarPermissao(cliente, principal);
 
         Ocorrencia oc = new Ocorrencia();
         oc.setCliente(cliente);
@@ -53,9 +61,11 @@ public class OcorrenciaService {
 
     @Transactional
     public Ocorrencia atualizarStatus(Long clienteId, Long ocorrenciaId,
-                                      OcorrenciaStatusRequest request) {
-        if (!clienteRepository.existsById(clienteId))
-            throw new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId);
+                                      OcorrenciaStatusRequest request, UserDetails principal) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId));
+
+        verificarPermissao(cliente, principal);
 
         Ocorrencia oc = ocorrenciaRepository.findById(ocorrenciaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Ocorrência não encontrada: " + ocorrenciaId));
@@ -72,9 +82,11 @@ public class OcorrenciaService {
     }
 
     @Transactional
-    public void deletar(Long clienteId, Long ocorrenciaId) {
-        if (!clienteRepository.existsById(clienteId))
-            throw new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId);
+    public void deletar(Long clienteId, Long ocorrenciaId, UserDetails principal) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado: " + clienteId));
+
+        verificarPermissao(cliente, principal);
 
         Ocorrencia oc = ocorrenciaRepository.findById(ocorrenciaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Ocorrência não encontrada: " + ocorrenciaId));
@@ -83,5 +95,27 @@ public class OcorrenciaService {
             throw new RegraDeNegocioException("Ocorrência não pertence ao cliente informado.");
 
         ocorrenciaRepository.delete(oc);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Admin e Gerente podem operar em qualquer cliente.
+     * Consultor só pode operar nos clientes que ele criou (criadoPor == seu id).
+     */
+    private void verificarPermissao(Cliente cliente, UserDetails principal) {
+        boolean isAdminOuGerente = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                            || a.getAuthority().equals("ROLE_GERENTE"));
+
+        if (isAdminOuGerente) return;
+
+        Usuario usuarioLogado = usuarioRepository.findByLogin(principal.getUsername())
+                .orElseThrow(() -> new RegraDeNegocioException("Usuário não encontrado."));
+
+        if (!usuarioLogado.getId().equals(cliente.getCriadoPor())) {
+            throw new RegraDeNegocioException(
+                    "Você não tem permissão para modificar ocorrências deste cliente.");
+        }
     }
 }
