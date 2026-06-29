@@ -1,6 +1,7 @@
 package com.m9.crm.service;
 
 import com.m9.crm.dto.OcorrenciaRequest;
+import com.m9.crm.dto.OcorrenciaAtrasadaResponse;
 import com.m9.crm.dto.OcorrenciaStatusRequest;
 import com.m9.crm.exception.RecursoNaoEncontradoException;
 import com.m9.crm.exception.RegraDeNegocioException;
@@ -14,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -33,6 +35,25 @@ public class OcorrenciaService {
         this.ocorrenciaRepository = ocorrenciaRepository;
         this.clienteRepository    = clienteRepository;
         this.usuarioRepository    = usuarioRepository;
+    }
+
+    public List<OcorrenciaAtrasadaResponse> listarAtrasadas(UserDetails principal) {
+        boolean isAdminOuGerente = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                            || a.getAuthority().equals("ROLE_GERENTE"));
+
+        Long criadoPor = null;
+        if (!isAdminOuGerente) {
+            Usuario usuarioLogado = usuarioRepository.findByLogin(principal.getUsername())
+                    .orElseThrow(() -> new RegraDeNegocioException("Usuário não encontrado."));
+            criadoPor = usuarioLogado.getId();
+        }
+
+        return ocorrenciaRepository
+                .findAtrasadas(LocalDateTime.now(), criadoPor)
+                .stream()
+                .map(OcorrenciaAtrasadaResponse::de)
+                .toList();
     }
 
     public List<Ocorrencia> listarPorCliente(Long clienteId) {
